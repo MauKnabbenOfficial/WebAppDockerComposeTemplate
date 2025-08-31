@@ -14,7 +14,10 @@ namespace WebAppDockerTeste
 
             // EF Core + SQL Server
             builder.Services.AddDbContext<AppDbContext>(opt =>
-                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));//Docker Compose
+
+            //builder.Services.AddDbContext<AppDbContext>(opt =>
+            //    opt.UseSqlServer(builder.Configuration.GetConnectionString("ContainerSqlIndependente")));//IIS Express
 
             // Add services to the container.
 
