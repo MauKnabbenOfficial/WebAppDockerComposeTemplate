@@ -1,0 +1,38 @@
+services:
+  api:
+    container_name: webappdockerteste-api
+    image: ${DOCKER_REGISTRY-}webappdockerteste
+    build:
+      context: ./src/WebAppDockerTeste
+      dockerfile: Dockerfile
+    ports:
+        - "5000:8080"
+        - "5001:8081"   # HTTPS
+    environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+        - api-sql
+    networks:
+        - webappdockerteste-network
+
+  api-sql:
+    container_name: webappdockerteste-api-sql
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    environment:
+        ACCEPT_EULA: "Y"
+        SA_PASSWORD: "Batman@2025!"
+    ports:
+        - "11433:1433"
+    volumes:
+        - "api-mssql-server:/var/opt/mssql"
+    networks:
+        webappdockerteste-network:
+            aliases:
+                - sql
+
+volumes:
+   api-mssql-server:
+
+networks:
+    webappdockerteste-network:
+        driver: bridge
