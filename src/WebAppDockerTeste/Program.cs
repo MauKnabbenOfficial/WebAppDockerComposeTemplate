@@ -14,7 +14,17 @@ namespace WebAppDockerTeste
 
             // EF Core + SQL Server
             builder.Services.AddDbContext<AppDbContext>(opt =>
-                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));//Docker Compose
+            {   //Docker Compose
+                opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"), sqlServerOptionsAction: sqlOptions =>
+                {
+                    // Ensina a API a tentar novamente a ligação em caso de falha.
+                    sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(40), // Não usa 40s para única tentativa mas sim tentativas que escalam progressivamente até 40s
+                        errorNumbersToAdd: null); // Usa a lista padrão de erros de rede transitórios
+                });
+            });
+
 
             //builder.Services.AddDbContext<AppDbContext>(opt =>
             //    opt.UseSqlServer(builder.Configuration.GetConnectionString("ContainerSqlIndependente")));//IIS Express
@@ -32,11 +42,14 @@ namespace WebAppDockerTeste
             {
                 app.MapOpenApi();            // => /openapi/v1.json
                 app.MapScalarApiReference(); // => /scalar/v1
+            }
 
-                using var scope = app.Services.CreateScope();
+            // Isto garante que a base de dados é criada e as migrações são aplicadas
+            // sempre que a aplicação arranca, seja em Development ou Production.
+            using (var scope = app.Services.CreateScope())
+            {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Database.Migrate();
-
             }
 
             if (!app.Environment.IsDevelopment())
