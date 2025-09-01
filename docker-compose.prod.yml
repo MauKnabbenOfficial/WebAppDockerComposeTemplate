@@ -8,8 +8,8 @@ services:
     # Removemos a secção "build" e substituímo-la pela "image".
     # Isto diz ao Docker para puxar a imagem do registo em vez de a construir.
     # Usamos a tag ":latest" para obter a versão mais recente publicada na sua branch principal.
-    image: ghcr.io/mauknabbenofficial/webappdockercomposetemplate:2d36e49f0351a39bdf57835e98dd008d41dac325
-    image: ${DOCKER_REGISTRY-}webappdockerteste
+    image: ghcr.io/mauknabbenofficial/webappdockercomposetemplate:a109c022c28718a409d31f9b822e91aa69c0b741
+    #image: ${DOCKER_REGISTRY-}webappdockerteste
     ports:
         - "5000:8080"
         - "5001:8081"   # HTTPS
