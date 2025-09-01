@@ -1,8 +1,9 @@
 
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using WebAppDockerTeste.Data;
-using WebAppDockerTeste.Models;
 
 namespace WebAppDockerTeste
 {
@@ -31,11 +32,39 @@ namespace WebAppDockerTeste
 
             // Add services to the container.
 
+            builder.Services.AddHealthChecks();
+
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            });
+
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();// padrão v1.json
+
+            builder.Services.AddOpenApi(options =>
+            {
+                options.AddDocumentTransformer((document, context, token) =>
+                {
+                    // Limpa quaisquer servidores que possam ter sido adicionados por defeito
+                    document.Servers.Clear();
+                    // Adiciona o nosso servidor correto, lido do .env
+                    document.Servers.Add(new OpenApiServer
+                    {
+                        Url = builder.Configuration["PUBLIC_API_URL"],
+                        Description = "Public API Server"
+                    });
+                    return Task.CompletedTask;
+                });
+            });
+
+            //builder.Services.AddOpenApi();// padrão v1.json
+
 
             var app = builder.Build();
+
+            app.UseForwardedHeaders();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -62,6 +91,7 @@ namespace WebAppDockerTeste
 
             app.MapControllers();
 
+            app.MapHealthChecks("/healthz");
             app.Run();
         }
     }

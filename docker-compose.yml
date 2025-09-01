@@ -1,26 +1,53 @@
 services:
+    
+  # O servico NGINX sera o ponto de entrada da aplicacao
+  nginx-proxy:
+    container_name: webappdockerteste-nginx-proxy
+    image: nginx:1.25-alpine # Usamos uma imagem oficial e leve
+    ports:
+        # TODO O TRAFEGO EXTERNO VAI PASSAR POR AQUI!
+        # Mapeia a porta 5000 (HTTP) do HOST para a porta 80 do Nginx.
+        - "${PUBLIC_HTTP_PORT}:80"
+        # Mapeia a porta 5001 (HTTPS) do HOST para a porta 443 do Nginx.
+        - "${PUBLIC_HTTPS_PORT}:443"
+    volumes:
+        # Monta o ficheiro de configura��o do Nginx que criamos.
+        - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+        # Monta os certificados SSL para que o Nginx os possa usar.
+        - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+        - webappdockerteste-network
+    depends_on:
+        - api
+
   api:
     container_name: webappdockerteste-api
     image: ${DOCKER_REGISTRY-}webappdockerteste
     build:
       context: ./src/WebAppDockerTeste
       dockerfile: Dockerfile
-    ports:
-        - "5000:8080"
-        - "5001:8081"   # HTTPS
+    # REMOVE A SECAO 'ports' DAQUI!
+    # A API n�o precisa mais ser exposta diretamente ao exterior.
+    # O Nginx comunica com a API atrav�s da rede interna do Docker, usando o nome do servi�o (api) como hostname.
+    # ports:
+    #     - "5000:8080"
+    #     - "5001:8081"   # HTTPS
     environment:
         - ASPNETCORE_ENVIRONMENT=Development
+        - PUBLIC_API_URL=${PUBLIC_API_URL}
+        - PUBLIC_API_URLS=${PUBLIC_API_URLS}
     depends_on:
         - api-sql
     networks:
         - webappdockerteste-network
+
 
   api-sql:
     container_name: webappdockerteste-api-sql
     image: "mcr.microsoft.com/mssql/server:2022-latest"
     environment:
         ACCEPT_EULA: "Y"
-        SA_PASSWORD: "Batman@2025!"
+        SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
     ports:
         - "11433:1433"
     volumes:
@@ -29,7 +56,7 @@ services:
         webappdockerteste-network:
             aliases:
                 - sql
-
+                
 volumes:
    api-mssql-server:
 
