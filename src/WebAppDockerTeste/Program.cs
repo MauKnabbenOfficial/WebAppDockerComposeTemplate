@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using WebAppDockerTeste.Data;
 
@@ -41,7 +42,25 @@ namespace WebAppDockerTeste
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();// padrão v1.json
+
+            builder.Services.AddOpenApi(options =>
+            {
+                options.AddDocumentTransformer((document, context, token) =>
+                {
+                    // Limpa quaisquer servidores que possam ter sido adicionados por defeito
+                    document.Servers.Clear();
+                    // Adiciona o nosso servidor correto, lido do .env
+                    document.Servers.Add(new OpenApiServer
+                    {
+                        Url = builder.Configuration["PUBLIC_API_URL"],
+                        Description = "Public API Server"
+                    });
+                    return Task.CompletedTask;
+                });
+            });
+
+            //builder.Services.AddOpenApi();// padrão v1.json
+
 
             var app = builder.Build();
 
