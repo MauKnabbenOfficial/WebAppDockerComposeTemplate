@@ -1,0 +1,48 @@
+# Este ficheiro é para executar a imagem que foi construída e publicada pelo pipeline do GitHub Actions.
+# Ele não constrói nada localmente, apenas faz o "pull" (download) da imagem pronta.
+
+services:
+  api:
+    container_name: webappdockerteste-api
+    # ALTERAÇÃO PRINCIPAL:
+    # Removemos a secção "build" e substituímo-la pela "image".
+    # Isto diz ao Docker para puxar a imagem do registo em vez de a construir.
+    # Usamos a tag ":latest" para obter a versão mais recente publicada na sua branch principal.
+    #image: ghcr.io/mauknabbenofficial/webappdockercomposetemplate:f9bf93aebd5b2841bf04ed382e01a88b253134b2
+    image: ${DOCKER_REGISTRY-}webappdockerteste
+    ports:
+        - "5000:8080"
+        - "5001:8081"   # HTTPS
+    environment:
+        # CORREÇÃO: Alterado para o formato de lista para evitar erros de sintaxe YAML.
+        - ASPNETCORE_ENVIRONMENT=Production
+        - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+    depends_on:
+        - api-sql
+    networks:
+        - webappdockerteste-network
+
+  # A configuração do banco de dados permanece exatamente a mesma.
+  api-sql:
+    container_name: webappdockerteste-api-sql
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    environment:
+        ACCEPT_EULA: "Y"
+        # IMPORTANTE: Em produção, a senha deve ser gerida de forma segura (ex: Docker Secrets).
+        SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    ports:
+        - "11433:1433"
+    volumes:
+        - "api-mssql-server:/var/opt/mssql"
+    networks:
+        webappdockerteste-network:
+            aliases:
+                - sql
+
+volumes:
+   api-mssql-server:
+
+networks:
+    webappdockerteste-network:
+        driver: bridge
+
